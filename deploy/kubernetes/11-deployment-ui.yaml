@@ -17,6 +17,16 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
+          env:
+            # Where this nginx forwards /api/* requests. Set to the in-cluster
+            # Service DNS for politics-api.
+            - name: API_UPSTREAM
+              value: http://politics-api.politics.svc.cluster.local:8000
+            # CoreDNS service ClusterIP, so nginx can re-resolve API_UPSTREAM
+            # if its pod IP rotates. Look this up with:
+            #   kubectl -n kube-system get svc kube-dns -o jsonpath='{.spec.clusterIP}'
+            - name: NGINX_RESOLVER
+              value: "10.43.0.10"
           resources:
             requests: { cpu: 20m, memory: 32Mi }
             limits:   { cpu: 200m, memory: 128Mi }
