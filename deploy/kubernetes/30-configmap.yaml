@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: politics-config
+data:
+  config.yaml: |
+    title: "Politics & Government"
+
+    llm:
+      provider: openai_compatible
+      base_url: http://ollama.ai-stack.svc.cluster.local:11434/v1
+      model: llama3.1:8b
+      api_key_env: LLM_API_KEY
+
+    feeds:
+      source: rss
+      lookback_hours: 96
+      max_per_category: 75
+      categories:
+        news:
+          label: News
+          urls:
+            - https://feeds.reuters.com/reuters/topNews
+        government:
+          label: Government
+          urls:
+            - https://www.whitehouse.gov/feed/
+
+    twitter:
+      enabled: false
+      nitter_url: ""
+      handles_env_prefix: ""
+      categories:
+        politics: { label: Politics, handles: [] }
+        government: { label: Government, handles: [] }
+
+    refresh:
+      articles_seconds: 900
+      digest_seconds: 3600
+      twitter_seconds: 10800

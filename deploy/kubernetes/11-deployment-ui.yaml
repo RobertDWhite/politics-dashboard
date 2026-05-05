@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: politics-ui
+  labels: { app: politics-ui }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: politics-ui }
+  template:
+    metadata:
+      labels: { app: politics-ui }
+    spec:
+      containers:
+        - name: ui
+          image: ghcr.io/your-org/politics-ui
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          resources:
+            requests: { cpu: 20m, memory: 32Mi }
+            limits:   { cpu: 200m, memory: 128Mi }

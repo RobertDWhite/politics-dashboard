@@ -1,0 +1,21 @@
+services:
+  api:
+    build: ./api
+    environment:
+      CONFIG_PATH: /app/config.yaml
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      FRESHRSS_API_PASSWORD: ${FRESHRSS_API_PASSWORD:-}
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+    restart: unless-stopped
+
+  ui:
+    build:
+      context: ./ui
+      args:
+        VITE_NITTER_EMBED_BASE: ${VITE_NITTER_EMBED_BASE:-}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - api
+    restart: unless-stopped

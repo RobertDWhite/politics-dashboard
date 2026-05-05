@@ -1,0 +1,83 @@
+# Politics Dashboard configuration
+#
+# Mount this file at /app/config.yaml inside the API container, or set
+# CONFIG_PATH to point elsewhere. Secrets (API keys, FreshRSS password,
+# Twitter handle lists) come from environment variables — see .env.example.
+
+title: "Politics & Government"
+
+# ── LLM provider ──────────────────────────────────────────────────────────
+#
+# provider: "openai_compatible" works for Ollama, OpenAI, vLLM, LocalAI,
+#           LM Studio, Together, Groq — anything with an OpenAI-compatible
+#           /chat/completions endpoint.
+# provider: "anthropic" calls the Anthropic Messages API directly.
+#
+# api_key_env names the env var that holds the API key. For local Ollama
+# you can leave it empty.
+llm:
+  provider: openai_compatible
+  base_url: http://ollama:11434/v1
+  model: llama3.1:8b
+  api_key_env: LLM_API_KEY
+  request_timeout: 180.0
+
+# ── News feeds ────────────────────────────────────────────────────────────
+#
+# source: "rss"      — pull each category's URLs directly. No external service.
+# source: "freshrss" — pull from a FreshRSS instance via the Greader API.
+#                      Set feeds.freshrss and put the password in env
+#                      (FRESHRSS_API_PASSWORD).
+#
+# Categories appear as filter buttons in the UI. The category KEY shows up
+# in URLs and stored articles; the LABEL is what users see.
+feeds:
+  source: rss
+  lookback_hours: 96
+  max_per_category: 75
+
+  categories:
+    news:
+      label: News
+      urls:
+        - https://feeds.reuters.com/reuters/topNews
+        - https://feeds.washingtonpost.com/rss/politics
+        - https://www.politico.com/rss/politicopicks.xml
+    government:
+      label: Government
+      urls:
+        - https://www.whitehouse.gov/feed/
+        - https://www.congress.gov/rss/most-viewed-bills.xml
+
+  # Only used when source: freshrss
+  # freshrss:
+  #   url: https://freshrss.example.com/api/greader.php
+  #   username: api-user
+  #   password_env: FRESHRSS_API_PASSWORD
+
+# ── Twitter / X via Nitter (optional) ─────────────────────────────────────
+#
+# Nitter is an external dependency. Run your own instance and put its URL
+# here. If twitter.enabled is false (or nitter_url is empty) the X panel
+# is hidden and no Twitter calls are made.
+#
+# handles_env_prefix lets you override the YAML handle lists from env vars
+# at runtime — useful for Kubernetes Secrets. With prefix "X", the env
+# var X_POLITICS=foo,bar replaces the politics handles below.
+twitter:
+  enabled: false
+  nitter_url: ""
+  handles_env_prefix: ""
+  categories:
+    politics:
+      label: Politics
+      handles: []
+    government:
+      label: Government
+      handles: []
+
+# ── Refresh intervals (seconds) ───────────────────────────────────────────
+refresh:
+  articles_seconds: 900     # 15 min
+  digest_seconds: 3600      # 1 hour
+  twitter_seconds: 10800    # 3 hours

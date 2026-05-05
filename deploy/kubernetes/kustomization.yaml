@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: politics
+
+resources:
+  - 00-namespace.yaml
+  - 10-deployment-api.yaml
+  - 11-deployment-ui.yaml
+  - 20-service-api.yaml
+  - 21-service-ui.yaml
+  - 30-configmap.yaml
+  - 40-secret.example.yaml
+
+images:
+  - name: ghcr.io/your-org/politics-api
+    newTag: "latest"
+  - name: ghcr.io/your-org/politics-ui
+    newTag: "latest"
