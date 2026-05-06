@@ -129,7 +129,7 @@ twitter:
   categories:
     politics:
       label: Politics
-      handles: [benshapiro, glennbeck]
+      handles: [benshapiro, anncoulter]
     government:
       label: Government
       handles: [POTUS, WhiteHouse]
