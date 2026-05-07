@@ -9,7 +9,6 @@ You configure your own feeds, your own X handles, and your own LLM provider
 (local Ollama, Anthropic, OpenAI, vLLM, LM Studio — anything OpenAI-compatible
 works). Nothing is hardcoded to a particular news source or political angle.
 
-![screenshot placeholder](docs/screenshot.png)
 
 ## Features
 
