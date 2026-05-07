@@ -14,6 +14,14 @@ function badgeClass(key: string, index: number): string {
   return index % 2 === 0 ? 'badge-news' : 'badge-gov';
 }
 
+function badgeText(label: string): string {
+  // Multi-word labels collapse to initials ("Federal Gov" → "FG"); single
+  // words pass through (CSS uppercases them).
+  const words = label.trim().split(/\s+/);
+  if (words.length > 1) return words.map(w => w[0]).join('').toUpperCase();
+  return label;
+}
+
 interface Props {
   article: Article;
   categories: CategoryDef[];
@@ -24,7 +32,7 @@ export function ArticleCard({ article, categories }: Props) {
   const idx = categories.findIndex(c => c.key === article.category);
   const def = idx >= 0 ? categories[idx] : null;
   const label = def?.label ?? article.category;
-  const shortLabel = label.length > 4 ? label.slice(0, 4) : label;
+  const shortLabel = badgeText(label);
 
   return (
     <div className="article-card">
