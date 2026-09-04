@@ -1,6 +1,4 @@
-import asyncio
-
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from app.config import config
 from app.services import digest as digest_svc
@@ -30,5 +28,7 @@ async def get_digest():
 
 @router.post("/digest/refresh")
 async def trigger_digest_refresh():
-    asyncio.create_task(digest_svc.refresh_digest())
-    return {"status": "refresh triggered"}
+    digest = await digest_svc.refresh_digest()
+    if not digest.get("text"):
+        raise HTTPException(status_code=503, detail="No recent articles are available for a digest")
+    return digest
