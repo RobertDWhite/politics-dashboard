@@ -21,6 +21,10 @@ llm:
   model: llama3.1:8b
   api_key_env: LLM_API_KEY
   request_timeout: 180.0
+  # Optional. Thinking models (qwen3, gpt-oss, o-series) spend max_tokens on
+  # reasoning first and can return empty content. "none" turns thinking off
+  # on Ollama; OpenAI accepts low/medium/high. Omit for non-reasoning models.
+  # reasoning_effort: none
 
 # ── News feeds ────────────────────────────────────────────────────────────
 #

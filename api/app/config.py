@@ -21,6 +21,8 @@ class LLMConfig(BaseModel):
     model: str = "llama3.1:8b"
     api_key_env: str = "LLM_API_KEY"
     request_timeout: float = 180.0
+    # OpenAI-style reasoning_effort; "none" disables thinking on Ollama/qwen3
+    reasoning_effort: str | None = None
 
 
 class CategoryConfig(BaseModel):

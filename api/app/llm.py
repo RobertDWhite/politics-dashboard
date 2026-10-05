@@ -29,25 +29,35 @@ class OpenAICompatibleProvider(LLMProvider):
         self.model = config.llm.model
         self.api_key = os.environ.get(config.llm.api_key_env, "")
         self.timeout = config.llm.request_timeout
+        self.reasoning_effort = config.llm.reasoning_effort
 
     async def chat(self, system: str, user: str, max_tokens: int = 500) -> str:
         headers = {"Authorization": f"Bearer {self.api_key or 'dummy'}"}
+        body = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            "max_tokens": max_tokens,
+        }
+        if self.reasoning_effort:
+            body["reasoning_effort"] = self.reasoning_effort
         async with httpx.AsyncClient() as client:
             resp = await client.post(
                 f"{self.base_url}/chat/completions",
                 headers=headers,
-                json={
-                    "model": self.model,
-                    "messages": [
-                        {"role": "system", "content": system},
-                        {"role": "user", "content": user},
-                    ],
-                    "max_tokens": max_tokens,
-                },
+                json=body,
                 timeout=self.timeout,
             )
             resp.raise_for_status()
-        text = resp.json()["choices"][0]["message"]["content"]
+        choice = resp.json()["choices"][0]
+        text = choice["message"].get("content") or ""
+        if not text.strip() and choice.get("finish_reason") == "length":
+            raise RuntimeError(
+                "model exhausted max_tokens before emitting content "
+                "(reasoning budget too large; set llm.reasoning_effort or raise max_tokens)"
+            )
         return _strip_think(text)
 
 
