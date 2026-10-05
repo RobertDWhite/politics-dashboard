@@ -54,8 +54,43 @@ class DigestGroundingTests(unittest.TestCase):
                 ARTICLES,
             )
 
+    def test_accepts_rules_star_bullets_and_grouped_citations(self):
+        _validate_digest(
+            "## Executive Branch\n"
+            "* **Policy announcement** — President Donald Trump announced a policy. [S1, S2]\n"
+            "\n---\n"
+            "## Congress\n"
+            "- **Committee hearing** — Lawmakers considered a bill. [S2]\n"
+            "\n## Bottom Line\n"
+            "Two current developments are covered.",
+            ARTICLES,
+        )
+
+    def test_accepts_title_cased_and_possessive_presidential_reference(self):
+        _validate_digest(
+            "## Executive Branch\n"
+            "- **President Donald Trump Announces Policy** — President Donald Trump's policy was announced. [S1]\n"
+            "\n## Congress\n"
+            "- **Committee hearing** — Lawmakers considered a bill. [S2]\n"
+            "\n## Bottom Line\n"
+            "Two current developments are covered.",
+            ARTICLES,
+        )
+
+    def test_rejects_grouped_citation_outside_evidence(self):
+        with self.assertRaises(ValueError):
+            _validate_digest(
+                "## Executive Branch\n"
+                "- **Policy announcement** — President Donald Trump announced a policy. [S1, S9]\n"
+                "\n## Congress\n"
+                "- **Committee hearing** — Lawmakers considered a bill. [S2]\n"
+                "\n## Bottom Line\nSummary.",
+                ARTICLES,
+            )
+
     def test_fallback_is_cited(self):
-        fallback = _safe_fallback(ARTICLES)
+        fallback = _safe_fallback(ARTICLES, "The AI model was unavailable.")
+        self.assertIn("The AI model was unavailable.", fallback)
         _validate_digest(fallback, ARTICLES)
 
 

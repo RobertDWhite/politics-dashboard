@@ -17,10 +17,12 @@ _digest: dict = {}
 _digest_lock = asyncio.Lock()
 _refresh_lock = asyncio.Lock()
 
-_CITATION = re.compile(r"\[S(\d+)\]")
+_CITATION = re.compile(r"\[(S\d+(?:\s*,\s*S\d+)*)\]")
+_BULLET = re.compile(r"^\s*[-*•]\s+")
 _PRESIDENT_REFERENCE = re.compile(
     r"\bPresident\s+([A-Z][A-Za-z'’-]*(?:\s+[A-Z][A-Za-z'’-]*){0,2})"
 )
+_POSSESSIVE = re.compile(r"['’]s$")
 
 _SYSTEM = (
     "You are a political news analyst writing a structured 24-hour digest "
@@ -84,12 +86,16 @@ def _validate_digest(text: str, articles: list[dict]) -> None:
     if "headline phrase" in lowered or "1-2 sentence factual summary" in lowered:
         raise ValueError("digest repeats the prompt template")
 
-    bullets = [line for line in text.splitlines() if line.lstrip().startswith("-")]
+    bullets = [line for line in text.splitlines() if _BULLET.match(line)]
     if len(bullets) < 2:
         raise ValueError("digest has too few sourced bullets")
 
     for bullet in bullets:
-        citations = [int(match) for match in _CITATION.findall(bullet)]
+        citations = [
+            int(ref.strip()[1:])
+            for group in _CITATION.findall(bullet)
+            for ref in group.split(",")
+        ]
         if not citations:
             raise ValueError("digest bullet has no source citation")
         if any(number < 1 or number > len(articles) for number in citations):
@@ -98,17 +104,23 @@ def _validate_digest(text: str, articles: list[dict]) -> None:
     source_corpus = " ".join(
         f"{article['title']} {article['content']}" for article in articles
     ).casefold()
+    # The capture can run into title-cased headline words ("President Trump
+    # Signs Order") or a possessive, so accept the reference when any leading
+    # part of the name appears after "President" in the sources.
     for match in _PRESIDENT_REFERENCE.finditer(text):
-        phrase = match.group(0).casefold()
-        if phrase not in source_corpus:
+        words = [_POSSESSIVE.sub("", word) for word in match.group(1).split()]
+        prefixes = (
+            "president " + " ".join(words[:n]).casefold() for n in range(1, len(words) + 1)
+        )
+        if not any(prefix in source_corpus for prefix in prefixes):
             raise ValueError(f"unsupported presidential reference: {match.group(0)}")
 
 
-def _safe_fallback(articles: list[dict]) -> str:
+def _safe_fallback(articles: list[dict], reason: str) -> str:
     """A source-only fallback is preferable to an unsourced invented digest."""
     lines = [
         "## Source-backed updates",
-        "The AI digest did not pass grounding checks. Review these current source headlines instead:",
+        f"{reason} Review these current source headlines instead:",
     ]
     for number, article in enumerate(articles[:12], start=1):
         lines.append(f"- **{article['title']}** — Reported by {article['source']}. [S{number}]")
@@ -134,12 +146,17 @@ async def refresh_digest() -> dict:
             return get_digest()
 
         try:
-            candidate = await llm.chat(_SYSTEM, _source_material(evidence), max_tokens=1200)
-            _validate_digest(candidate, evidence)
-            text = candidate
+            candidate = await llm.chat(_SYSTEM, _source_material(evidence), max_tokens=2000)
         except Exception as e:
-            logger.warning("Digest rejected by grounding checks: %s", e)
-            text = _safe_fallback(evidence)
+            logger.warning("Digest LLM request failed: %s", e)
+            text = _safe_fallback(evidence, "The AI model was unavailable.")
+        else:
+            try:
+                _validate_digest(candidate, evidence)
+                text = candidate
+            except ValueError as e:
+                logger.warning("Digest rejected by grounding checks: %s; output: %.500r", e, candidate)
+                text = _safe_fallback(evidence, "The AI digest did not pass grounding checks.")
 
         text = f"{text}\n\n{_source_appendix(evidence)}"
         async with _digest_lock:
