@@ -87,7 +87,7 @@ def _validate_digest(text: str, articles: list[dict]) -> None:
         raise ValueError("digest repeats the prompt template")
 
     bullets = [line for line in text.splitlines() if _BULLET.match(line)]
-    if len(bullets) < 2:
+    if len(bullets) < min(2, len(articles)):
         raise ValueError("digest has too few sourced bullets")
 
     for bullet in bullets:

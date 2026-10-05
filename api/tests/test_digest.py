@@ -77,6 +77,25 @@ class DigestGroundingTests(unittest.TestCase):
             ARTICLES,
         )
 
+    def test_accepts_single_bullet_when_only_one_source(self):
+        _validate_digest(
+            "## Executive Branch\n"
+            "- **Policy announcement** — President Donald Trump announced a policy. [S1]\n"
+            "\n## Bottom Line\n"
+            "One current development is covered.",
+            ARTICLES[:1],
+        )
+
+    def test_rejects_single_bullet_when_several_sources(self):
+        with self.assertRaises(ValueError):
+            _validate_digest(
+                "## Executive Branch\n"
+                "- **Policy announcement** — President Donald Trump announced a policy. [S1]\n"
+                "\n## Bottom Line\n"
+                "One current development is covered.",
+                ARTICLES,
+            )
+
     def test_rejects_grouped_citation_outside_evidence(self):
         with self.assertRaises(ValueError):
             _validate_digest(
