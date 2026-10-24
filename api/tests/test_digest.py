@@ -115,3 +115,30 @@ class DigestGroundingTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class StructuredDigestTests(unittest.TestCase):
+    def test_excludes_corrupted_short_and_duplicate_sources(self):
+        from app.services.digest import _select_evidence
+        good = dict(ARTICLES[0], content='A usable source excerpt with enough factual detail to summarize accurately.')
+        broken = dict(good, url='https://bad.test', title='[AI Error]')
+        self.assertEqual(_select_evidence([broken, dict(good, title='[Summary] Feed roundup'), dict(good, content='AI Error: failed'), dict(good, content='short'), good, good]), [good])
+
+    def test_rejects_invented_sentence_id(self):
+        from app.services.digest import _parse_batch
+        with self.assertRaises(ValueError):
+            _parse_batch('{"items":[{"source_id":1,"sentence_id":99}]}', ARTICLES[:1])
+
+    def test_requires_exact_source_ids(self):
+        from app.services.digest import _parse_batch
+        with self.assertRaises(ValueError):
+            _parse_batch('{"items":[{"source_id":1,"sentence_id":1},{"source_id":1,"sentence_id":1}]}', ARTICLES)
+
+    def test_accepts_fenced_json_and_returns_only_source_text(self):
+        from app.services.digest import _parse_batch
+        raw = '```json\n{"items":[{"source_id":2,"sentence_id":1},{"source_id":1,"sentence_id":1}]}\n```'
+        self.assertEqual(_parse_batch(raw, ARTICLES), [a['content'] for a in ARTICLES])
+
+    def test_does_not_split_us_abbreviation(self):
+        from app.services.digest import _sentences
+        article = dict(ARTICLES[0], content="The agency warned that U.S. personnel abroad face increased threats.")
+        self.assertEqual(_sentences(article), [article['content']])
